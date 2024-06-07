@@ -30,15 +30,30 @@ def main():
         image = cv2.imread(img_path)
         brilho = 100
         contraste = 1.5
-        image = contrasteBrilho(image,brilho,contraste)
+        #image = contrasteBrilho(image,brilho,contraste)
 
     # Segunda etapa: um novo threshold para deixar a imagem mais "flat": sem as sombras das imagens
     for name, img_path in images_dict.items():
         image = cv2.imread(img_path)
+        original = image
+        image = contrasteBrilho(image,5)
         image = cv2.medianBlur(image,11)
+        cv2.imwrite("{}/img/edited/final/1_{}_blur.jpeg".format(master_path, name), image)
         image = rgb_to_gray(image)
+        cv2.imwrite("{}/img/edited/final/2_{}_black_white.jpeg".format(master_path, name), image)
         image = adapt_threshold(image)
-        image = cv2.morphologyEx(image, cv2.MORPH_CLOSE, kernel, iterations=39)
+        cv2.imwrite("{}/img/edited/final/3_{}_adaptative_treshold.jpeg".format(master_path, name), image)
+        image = cv2.medianBlur(image,7)
+        # show_image(image, "blur")
+        image = cv2.morphologyEx(image, cv2.MORPH_OPEN, kernel, iterations=1)
+        # show_image(image, "open")
+        # image = cv2.medianBlur(image,13)
+        # show_image(image, "blur2")
+        cv2.imwrite("{}/img/edited/final/4_{}_fechamento.jpeg".format(master_path, name), image)
+        circles = detect_circles(image)
+        print(circles)
+        draw_circles(original, circles, "{}/img/edited/final/circles/{}".format(master_path, name))
+        cv2.destroyAllWindows()
         #image = cv2.erode(image, kernel_erosion, iterations=6)
 
     # # Terceira etapa: fazendo o negativo da imagem para trabalhar com as cores certas.
@@ -56,8 +71,5 @@ def main():
     #     binarized_image = threshold(median_blurred, threshold_value)
     #     negative_image = negative(binarized_image)
     #     cv2.imwrite("{}/img/edited/{}_negative.jpeg".format(master_path, name), negative_image)
-
-    show_image(image, "adaptive_threshold_no_filter")
-    cv2.destroyAllWindows()
 
 main()

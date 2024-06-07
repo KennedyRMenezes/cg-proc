@@ -4,9 +4,12 @@ import matplotlib.pyplot as plt
 
 #Funções de auxilio para plicar as transformações na imagem
 
-def contrasteBrilho(image,alpha,beta):
-    print("hello")
-    return cv2.convertScaleAbs(image, alpha, beta)
+def contrasteBrilho(image,gamma):
+    lookUpTable = np.empty((1,256), np.uint8)
+    for i in range(256):
+        lookUpTable[0,i] = np.clip(pow(i / 255.0, gamma) * 255.0, 0, 255)
+    
+    return cv2.LUT(image, lookUpTable)
 
 
 def rgb_to_gray(image):
@@ -28,6 +31,26 @@ def negative(image):
 
     negative_image = cv2.bitwise_not(image)
     return negative_image
+
+def detect_circles(image):
+    rows = image.shape[0]
+    circles = cv2.HoughCircles(image, cv2.HOUGH_GRADIENT, 1, rows/8, param1=100, param2=30)
+    return circles
+
+def draw_circles(image, circles, name):
+    if circles is not None:
+        circles = np.uint16(np.around(circles))
+        for i in circles[0, :]:
+            center = (i[0], i[1])
+            # circle center
+            cv2.circle(image, center, 1, (0, 100, 100), 3)
+            # circle outline
+            radius = i[2]
+            cv2.circle(image, center, radius, (255, 0, 0), 3)
+        cv2.imshow("circulos", image)
+        cv2.waitKey(0)
+        cv2.imwrite(name + ".png", image)
+
 
 def show_image(image, name):
     cv2.imshow("moedas_" + name, image)
