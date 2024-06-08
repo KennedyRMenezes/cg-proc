@@ -44,7 +44,7 @@ def detect_circles(image):
         1,                      # Razão de resolução inversa do acumulador
         rows / 8,               # Distância mínima entre os centros dos círculos detectados
         param1=100,             # Parâmetro para o detector de bordas de Canny (limite superior)
-        param2=30               # Limite para o centro de detecção do círculo
+        param2=30,               # Limite para o centro de detecção do círculo
     )
     return circles
 
@@ -58,7 +58,7 @@ def draw_circles(image, circles, name):
             # circle outline
             radius = i[2]
             cv2.circle(image, center, radius, (255, 0, 0), 3)
-        cv2.imshow("circulos", image)
+        # cv2.imshow("circulos", image)
         cv2.waitKey(0)
         cv2.imwrite(name + ".png", image)
 

@@ -62,7 +62,7 @@ def main():
         
         #Função de detecção de círculos usando Hough.
         circles = detect_circles(image)
-        print(circles)
+        print("\nCircles: \n",circles,"\nFrom image: ",name)
 
         #Desenha na imagem os círculos encontrados.
         draw_circles(original, circles, "{}/img/edited/final/circles/{}".format(master_path, name))
