@@ -36,25 +36,39 @@ def main():
     for name, img_path in images_dict.items():
         image = cv2.imread(img_path)
         original = image
+
         image = contrasteBrilho(image,5)
+        cv2.imwrite("{}/img/edited/final/0_{}_brilho_contraste.jpeg".format(master_path, name), image)
+
         image = cv2.medianBlur(image,11)
         cv2.imwrite("{}/img/edited/final/1_{}_blur.jpeg".format(master_path, name), image)
+
         image = rgb_to_gray(image)
         cv2.imwrite("{}/img/edited/final/2_{}_black_white.jpeg".format(master_path, name), image)
+
         image = adapt_threshold(image)
         cv2.imwrite("{}/img/edited/final/3_{}_adaptative_treshold.jpeg".format(master_path, name), image)
+
+        #####Esse blur aparentemente desmancha mais ainda o círculo
         image = cv2.medianBlur(image,7)
         # show_image(image, "blur")
+        ###########################################################
+
         image = cv2.morphologyEx(image, cv2.MORPH_OPEN, kernel, iterations=1)
         # show_image(image, "open")
         # image = cv2.medianBlur(image,13)
         # show_image(image, "blur2")
         cv2.imwrite("{}/img/edited/final/4_{}_fechamento.jpeg".format(master_path, name), image)
+        
+        #Função de detecção de círculos usando Hough.
         circles = detect_circles(image)
         print(circles)
+
+        #Desenha na imagem os círculos encontrados.
         draw_circles(original, circles, "{}/img/edited/final/circles/{}".format(master_path, name))
+
         cv2.destroyAllWindows()
-        #image = cv2.erode(image, kernel_erosion, iterations=6)
+        # image = cv2.erode(image, kernel_erosion, iterations=6)
 
     # # Terceira etapa: fazendo o negativo da imagem para trabalhar com as cores certas.
     # images_dict_edited = {

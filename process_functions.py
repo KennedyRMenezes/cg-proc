@@ -33,8 +33,19 @@ def negative(image):
     return negative_image
 
 def detect_circles(image):
+
+    # Obtém o número de linhas (altura) da imagem
     rows = image.shape[0]
-    circles = cv2.HoughCircles(image, cv2.HOUGH_GRADIENT, 1, rows/8, param1=100, param2=30)
+
+    # Detecta círculos na imagem usando a transformada de Hough
+    circles = cv2.HoughCircles(
+        image,                  # Imagem de entrada (deve ser em escala de cinza)
+        cv2.HOUGH_GRADIENT,     # Método de detecção (HOUGH_GRADIENT é o método clássico)
+        1,                      # Razão de resolução inversa do acumulador
+        rows / 8,               # Distância mínima entre os centros dos círculos detectados
+        param1=100,             # Parâmetro para o detector de bordas de Canny (limite superior)
+        param2=30               # Limite para o centro de detecção do círculo
+    )
     return circles
 
 def draw_circles(image, circles, name):
