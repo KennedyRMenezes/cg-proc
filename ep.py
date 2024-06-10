@@ -1,89 +1,186 @@
 import cv2
+import numpy as np
 import matplotlib.pyplot as plt
+import os
+import imghdr
+import tkinter as tk
+from tkinter import Tk, Label, Entry, Button
+from PIL import Image, ImageTk
+from IPython.display import Image, display
+import ipywidgets as widgets
+from screeninfo import get_monitors
+
 import pathlib
 from process_functions import *
 
 def main():
-
+    
     master_path = pathlib.Path(__file__).parent.resolve()
+    
+    # Dicionário para facilitar a refêrencia das imagens antes do threshold
+    image_base_path = "{}/img/".format(master_path)
 
-    # Paths das imagens
-    one_each = "{}/img/one_each.jpeg".format(master_path)
-    glued = "{}/img/glued.jpeg".format(master_path)
-    mess = "{}/img/mess.jpeg".format(master_path)
-    real_and_twentyFive = "{}/img/real_and_twentyFive.jpeg".format(master_path)
+    total_images = count_images_in_folder(image_base_path)
 
-    kernel = np.ones((2,2),np.uint8)
-    kernel_erosion = np.ones((20,20),np.uint8)
+    images_dict = {}
 
-    # Dict para usar o nome da variável na hora de salvar o arquivo alterado.
-    images_dict = {
-        'one_each': one_each,
-        'glued': glued,
-        'mess': mess,
-        'real_and_twentyFive': real_and_twentyFive
-    }
+    for i in range(1,total_images+1):
+        image_name = f"{i}.jpeg"  # Nome da imagem
+        image_path = image_base_path + image_name  
+        images_dict[f"{i}"] = image_path  # 1, 2 ..., 3
 
-
-    #Ajuste de brilho e contraste
+    #Ajuste de brilho e contraste (TESTE)
     for name, img_path in images_dict.items():
         image = cv2.imread(img_path)
         brilho = 100
         contraste = 1.5
-        #image = contrasteBrilho(image,brilho,contraste)
+        image = contrasteBrilho(image,brilho,contraste)
 
-    # Segunda etapa: um novo threshold para deixar a imagem mais "flat": sem as sombras das imagens
+    # Primeira etapa: threshold com o método de OTSU
+    # Método de OTSU: um dos mais populares algoritmos de threshold que determina o limiar ótimo
     for name, img_path in images_dict.items():
         image = cv2.imread(img_path)
-        original = image
+        gray_image = rgb_to_gray(image)
+        binarized_image = OTSU_threshold(gray_image)
+        cv2.imwrite("{}/img/edited/t_hold_OTSU_{}.jpeg".format(master_path, name), binarized_image)
 
-        image = contrasteBrilho(image,5)
-        cv2.imwrite("{}/img/edited/final/0_{}_brilho_contraste.jpeg".format(master_path, name), image)
+    # Dicionário para facilitar a refêrencia das imagens após o threshold
 
-        image = cv2.medianBlur(image,11)
-        cv2.imwrite("{}/img/edited/final/1_{}_blur.jpeg".format(master_path, name), image)
+    edited_image_base_path = "{}/img/edited/t_hold_OTSU_".format(master_path)
 
-        image = rgb_to_gray(image)
-        cv2.imwrite("{}/img/edited/final/2_{}_black_white.jpeg".format(master_path, name), image)
+    images_dict_edited = {}
 
-        image = adapt_threshold(image)
-        cv2.imwrite("{}/img/edited/final/3_{}_adaptative_treshold.jpeg".format(master_path, name), image)
+    for i in range(1, (total_images+1)):
+        image_name = f"{i}.jpeg"  # Nome da imagem editada
+        image_path = edited_image_base_path + image_name  
+        images_dict_edited[f"{i}_"] = image_path  
 
-        #####Esse blur aparentemente desmancha mais ainda o círculo
-        image = cv2.medianBlur(image,7)
-        # show_image(image, "blur")
-        ###########################################################
+    list_circles = []
+    list_images = []
 
-        image = cv2.morphologyEx(image, cv2.MORPH_OPEN, kernel, iterations=1)
-        # show_image(image, "open")
-        # image = cv2.medianBlur(image,13)
-        # show_image(image, "blur2")
-        cv2.imwrite("{}/img/edited/final/4_{}_fechamento.jpeg".format(master_path, name), image)
+    for name, img_path in images_dict_edited.items():
+        list_images.append(img_path)
+
+        # Ler a imagem em tons de cinza e aplicar algumas correções
+        image = cv2.imread(img_path, cv2.IMREAD_GRAYSCALE)
+        brilho = 100
+        contraste = 1.2
+        image = contrasteBrilho(image, brilho, contraste)
+
+        # Aplicar filtro de mediana
+        median_blurred = cv2.medianBlur(image, 7)
+
+        # Inverter as cores da imagem
+        negative_image = negative(median_blurred)
+
+        # Preencher buracos na imagem e adicionar a imagem na pasta EDITED
+        filled_image = fill_holes(negative_image)
+        cv2.imwrite("{}/img/edited/{}_FILLED.jpeg".format(master_path, name), filled_image)
         
-        #Função de detecção de círculos usando Hough.
-        circles = detect_circles(image)
-        print("\nCircles: \n",circles,"\nFrom image: ",name)
+        # Remover ruído usando abertura 
+        kernel = np.ones((3, 3), np.uint8)
+        opening = cv2.morphologyEx(filled_image, cv2.MORPH_OPEN, kernel, iterations=2)
+        
+        # Área de fundo seguro
+        sure_bg = cv2.dilate(opening, kernel, iterations=3)
+        
+        # Área de primeiro plano seguro
+        dist_transform = cv2.distanceTransform(opening, cv2.DIST_L2, 5)
+        #cv2.imwrite("{}/img/edited/{}_DIST.jpeg".format(master_path, name), dist_transform)
+        ret, sure_fg = cv2.threshold(dist_transform, 0.6 * dist_transform.max(), 255, 0)
+        
+        # Área da região desconhecida
+        sure_fg = np.uint8(sure_fg)
+        unknown = cv2.subtract(sure_bg, sure_fg)
+        
+        # Rotulagem de marcadores
+        ret, markers = cv2.connectedComponents(sure_fg)
+        
+        # Adicionar um a todos os rótulos para que o fundo seguro não seja 0, mas 1
+        markers = markers + 1
+        
+        # Marcar a região desconhecida com zero
+        markers[unknown == 255] = 0
 
-        #Desenha na imagem os círculos encontrados.
-        draw_circles(original, circles, "{}/img/edited/final/circles/{}".format(master_path, name))
+        # Aplicar o algoritmo de watershed
+        original_image = cv2.imread(img_path)
+        markers = cv2.watershed(original_image, markers)
+        original_image[markers == -1] = [255, 0, 0]
+        
+    
+        # Intermediate images
+        cv2.imwrite("{}/img/edited/{}_opening.jpeg".format(master_path, name), opening)
+        cv2.imwrite("{}/img/edited/{}_sure_bg.jpeg".format(master_path, name), sure_bg)
+        cv2.imwrite("{}/img/edited/{}_sure_fg.jpeg".format(master_path, name), sure_fg)
+        cv2.imwrite("{}/img/edited/{}_unknown.jpeg".format(master_path, name), unknown)
+        cv2.imwrite("{}/img/edited/{}_markers.jpeg".format(master_path, name), markers.astype(np.uint8))
+        cv2.imwrite("{}/img/edited/{}_final.jpeg".format(master_path, name), original_image)
+        
 
-        cv2.destroyAllWindows()
-        # image = cv2.erode(image, kernel_erosion, iterations=6)
+        # Função de seleção de círculo (HOUGH)
+        circles = detect_circles(markers.astype(np.uint8))
+        #circles = detect_circles(filled_image) # UTILIZADO PARA TESTES
+        # print(circles)
 
-    # # Terceira etapa: fazendo o negativo da imagem para trabalhar com as cores certas.
-    # images_dict_edited = {
-    #     'one_each_': "{}/img/edited/t_hold_one_each.jpeg".format(master_path),
-    #     'glued_': "{}/img/edited/t_hold_glued.jpeg".format(master_path),
-    #     'mess_': "{}/img/edited/t_hold_mess.jpeg".format(master_path),
-    #     'real_and_twentyFive_': "{}/img/edited/t_hold_real_and_twentyFive.jpeg".format(master_path)
-    # }
+        list_circles.append(circles)
 
-    # for name, img_path in images_dict_edited.items():
-    #     image = cv2.imread(img_path, cv2.IMREAD_GRAYSCALE)
-    #     median_blurred = cv2.medianBlur(image,7)
-    #     threshold_value = 135
-    #     binarized_image = threshold(median_blurred, threshold_value)
-    #     negative_image = negative(binarized_image)
-    #     cv2.imwrite("{}/img/edited/{}_negative.jpeg".format(master_path, name), negative_image)
+        # Coordenadas utilizadas para o processamento geradas pelo Algoritmo de Hough
+        #print("\nCircles: \n",circles,"\nFrom image: ",name)
 
+        teste = cv2.imread("{}/img/{}.jpeg".format(master_path, name.rstrip('_'))) # O _ porque não temos isso na imagem inicial
+        
+        # Desenha uma linha vermelha ao redor das moedas e adiciona na pasta circles
+        draw_circles(teste, circles, "{}/img/edited/final/circles/{}.jpeg".format(master_path, name))
+
+    new_dict = converter_para_dicionario(list_circles)
+        
+    maiores_valores = {}
+    maior_moeda = []
+    raio_moedas = {5:11, 10:10, 25:12.5, 50:11.5, 100:13.5}
+    for chave, valor in new_dict.items():
+        maior_valor = float('-inf')
+        for coordenada in valor:
+            raio = coordenada[2]
+            if raio > maior_valor:
+                maior_valor = raio
+        maiores_valores[chave] = maior_valor
+
+
+    list_path = []
+    for i in range(total_images):
+        i = i+1
+        img_path = "{}/img/{}.jpeg".format(master_path, i)
+        list_path.append(img_path)
+
+    # Exibir janela para todas as imagens
+    maior_moeda = exibir_janela_imagens(list_path)
+
+    raio_rel = {}
+
+    for chave in new_dict:
+        rel = []
+        maior = maiores_valores[chave]
+        ratio = (raio_moedas[maior_moeda[int(chave) - 1]])/maior
+        for coordenada in new_dict[chave]:
+            rel.append(coordenada[2] * ratio)
+        raio_rel[chave] = rel
+
+    total_centavos_dict = encontrar_moeda(raio_rel, raio_moedas)
+
+    # for chave, valor in total_centavos_dict.items():
+    #     valor_em_real = round((valor / 100), 2)
+    #     num_format = "{:.2f}".format(valor_em_real)
+    #     print("A imagem {} tem R$ {}".format(chave, num_format))
+
+    # Preparando texto para exibição na janela
+    texto_resultado = ""
+    for chave, valor in total_centavos_dict.items():
+        valor_em_real = round((valor / 100), 2)
+        num_format = "{:.2f}".format(valor_em_real)
+        texto_resultado += f"A imagem {chave} tem R$ {num_format}\n"
+
+    # Exibir janela com o resultado
+    janela_resultado = JanelaTexto(texto_resultado)
+    janela_resultado.root.mainloop()
+    
 main()
