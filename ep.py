@@ -4,20 +4,6 @@ import numpy as np
 import pathlib
 from process_functions import *
 
-moedas = {
-    1: 355,
-    2: 610,
-    3: 800,
-    4: 645,
-    5: 620,
-    6: 280,
-    7: 250,
-    8: 250,
-    9: 160,
-    10: 160,
-}
-
-
 def main():
 
     master_path = pathlib.Path(__file__).parent.resolve()
