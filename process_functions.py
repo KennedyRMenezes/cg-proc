@@ -1,7 +1,6 @@
 
 import cv2
 import numpy as np
-import matplotlib.pyplot as plt
 import os
 import imghdr
 from PIL import Image, ImageTk

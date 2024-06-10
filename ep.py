@@ -1,14 +1,5 @@
 import cv2
 import numpy as np
-import matplotlib.pyplot as plt
-import os
-import imghdr
-import tkinter as tk
-from tkinter import Tk, Label, Entry, Button
-from PIL import Image, ImageTk
-from IPython.display import Image, display
-import ipywidgets as widgets
-from screeninfo import get_monitors
 
 import pathlib
 from process_functions import *
