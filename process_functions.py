@@ -151,7 +151,7 @@ class JanelaImagem:
 
 def exibir_janela_imagens(
         lista_de_imagens, 
-        texto_input="Qual a moeda de maior tamanho na foto? 1 = 1 Real; 50 = 50 centavos",
+        texto_input="Qual a moeda de maior tamanho na foto? 100 = 1 Real; 50 = 50 centavos",
         largura_imagem=550
 ):
     respostas = []  # Dicionário para armazenar as respostas do usuário
