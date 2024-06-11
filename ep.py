@@ -119,12 +119,10 @@ def main():
         # Função de seleção de círculo (HOUGH)
         circles = detect_circles(markers.astype(np.uint8))
         # circles = detect_circles(filled_image) # UTILIZADO PARA TESTES
-        # print(circles)
 
         list_circles.append(circles)
 
         # Coordenadas utilizadas para o processamento geradas pelo Algoritmo de Hough
-        # print("\nCircles: \n",circles,"\nFrom image: ",name)
 
         teste = cv2.imread(
             "{}/img/{}.jpeg".format(master_path, name.rstrip("_"))
@@ -137,18 +135,23 @@ def main():
             "{}/img/edited/final/circles/{}.jpeg".format(master_path, name),
         )
 
-    new_dict = converter_para_dicionario(list_circles)
+    dicionario_de_circulos_encontrados = converter_para_dicionario(list_circles)
 
-    maiores_valores = {}
-    maior_moeda = []
+    #Maior circulo de cada imagem sera definida pelo usuario
+    maiores_circulos_de_cada_image = {}
+
+
+    #Raio das moedas em centiemtros
     raio_moedas = {5: 11, 10: 10, 25: 12.5, 50: 11.5, 100: 13.5}
-    for chave, valor in new_dict.items():
-        maior_valor = float("-inf")
-        for coordenada in valor:
+
+    
+    for imagem, circulo in dicionario_de_circulos_encontrados.items():
+        maior_circulo = float("-inf")
+        for coordenada in circulo:
             raio = coordenada[2]
-            if raio > maior_valor:
-                maior_valor = raio
-        maiores_valores[chave] = maior_valor
+            if raio > maior_circulo:
+                maior_circulo = raio
+        maiores_circulos_de_cada_image[imagem] = maior_circulo
 
     list_path = []
     for i in range(total_images):
@@ -156,10 +159,12 @@ def main():
         img_path = "{}/img/{}.jpeg".format(master_path, i)
         list_path.append(img_path)
 
-    # Exibir janela para todas as imagens
-    maior_moeda = exibir_janela_imagens(list_path)
+    #Lista da maior moeda para cada imagem devolvida pelo usuario
+    maior_moeda = []
 
-    raio_rel = {}
+    # Exibir janela para todas as imagens
+    maior_moeda = interface_usuario(list_path)
+
 
     moedas = {
         "1": 355,
@@ -174,26 +179,43 @@ def main():
         "10": 160,
     }
 
-    for chave in new_dict:
+    #Dicionario para os raios relativos das imagens.
+    #Fará a proporção de cada raio levando em consideração
+    # o maior raio devolvido pelo usuário
+    raio_rel = {}
+    
+    for imagem in dicionario_de_circulos_encontrados:
+
+        #Esse será o valor(value) do dicionário
         rel = []
-        maior = maiores_valores[chave]
-        ratio = (raio_moedas[maior_moeda[int(chave) - 1]]) / maior
-        for coordenada in new_dict[chave]:
+
+        #Maior circulo da imagen n, n+1, n+2...
+        maior = maiores_circulos_de_cada_image[imagem]
+
+        #Pega a maior moeda de cada imagem indicada pelo usuario - maior_moeda
+        #Relaciona com a mesma moeda no dicionario raio_moeda em que tem o raio das moedas em centímetros
+        #Por fim faz a relação (pela divisão) com a maior moeda
+        #maior == pixel
+        #maior_moeda == pixel
+        #raio_moedas == centrímetros
+        #ratio == cent/pixel
+        ratio = (raio_moedas[maior_moeda[int(imagem) - 1]]) / maior
+
+        #O for passa por cada círculo da imagem e faz a relação multiplicando pelo raio de cada moeda
+        for coordenada in dicionario_de_circulos_encontrados[imagem]:
+
+            #rel == (cent/pixel) * pixel == centimetros
             rel.append(coordenada[2] * ratio)
-        raio_rel[chave] = rel
 
-    total_centavos_dict = encontrar_moeda(raio_rel, raio_moedas)
+        raio_rel[imagem] = rel
 
-    # for chave, valor in total_centavos_dict.items():
-    #     valor_em_real = round((valor / 100), 2)
-    #     num_format = "{:.2f}".format(valor_em_real)
-    #     print("A imagem {} tem R$ {}".format(chave, num_format))
+    #Devolve a soma da imagem com relação nos raios da imagem calculados.
+    total_centavos_dict = encontrar_moeda_mais_proxima(raio_rel, raio_moedas)
 
-    # Preparando texto para exibição na janela
+    #Exibição de quantos reais há na imagem
     erro = {}
     texto_resultado = ""
     for chave, valor in total_centavos_dict.items():
-        # print(chave, valor)
         erro[chave] = abs(moedas[chave] - valor)
         valor_em_real = round((valor / 100), 2)
         num_format = "{:.2f}".format(valor_em_real)
@@ -203,7 +225,8 @@ def main():
     janela_resultado = JanelaTexto(texto_resultado)
     janela_resultado.root.mainloop()
 
-    print("Erro em centavos por imagem:", erro)
 
+
+    print("Erro em centavos por imagem:", erro)
 
 main()

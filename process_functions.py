@@ -87,6 +87,7 @@ def draw_circles(image, circles, save_path):
             cv2.circle(image, (i[0], i[1]), 2, (0, 0, 255), 3)
         cv2.imwrite(save_path, image)
 
+#Converte a lista devolvida por 'detect_circles' para um dicionario para atrelar a imagem aos circulos encontrados
 def converter_para_dicionario(listas):
     dicionario = {}
     for i, arr in enumerate(listas):
@@ -95,15 +96,16 @@ def converter_para_dicionario(listas):
         dicionario[identificador] = coordenadas
     return dicionario
 
-def encontrar_moeda(raio_rel, raio_moedas):
+
+def encontrar_moeda_mais_proxima(raio_rel, raio_moedas):
         total_centavos_dict = {}
-        for chave, valores in raio_rel.items():
+        for imagem, circulos in raio_rel.items():
             total_centavos = 0
-            for raio in valores:
+            for raio in circulos:
                 mais_proximo = min(raio_moedas.values(), key=lambda x: abs(x - raio))
                 moeda = [k for k, v in raio_moedas.items() if v == mais_proximo][0]
                 total_centavos += moeda
-            total_centavos_dict[chave] = total_centavos
+            total_centavos_dict[imagem] = total_centavos
         return total_centavos_dict
 
 class JanelaImagem:
@@ -145,11 +147,12 @@ class JanelaImagem:
 
     def confirmar(self, event=None):  # O argumento event é necessário para a ligação com o evento 'Enter'
         resposta = self.entry_input.get()
-        # print("Resposta:", resposta)
         self.resposta_usuario = resposta
         self.root.destroy()  # Fechar a janela atual
 
-def exibir_janela_imagens(
+#Função que recebe uma lista de imagens, uma string, e a largura da image.
+#Para cada imagem recebe o input do usuario, guarda elas e devolve como 'respostas'
+def interface_usuario(
         lista_de_imagens, 
         texto_input="Qual a moeda de maior tamanho na foto? 100 = 1 Real; 50 = 50 centavos",
         largura_imagem=550
@@ -161,6 +164,7 @@ def exibir_janela_imagens(
         respostas.append(int(janela_imagem.resposta_usuario))
     return respostas
 
+#Janela em TKinter para apresentar os resultado da soma das imagens
 class JanelaTexto:
     def __init__(self, texto):
         self.root = tk.Toplevel()
@@ -184,3 +188,8 @@ class JanelaTexto:
         # Botão para fechar a janela
         self.botao_fechar = tk.Button(self.root, text="Fechar", command=self.root.destroy)
         self.botao_fechar.pack()
+
+'''
+
+
+'''
