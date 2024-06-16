@@ -167,16 +167,16 @@ def main():
 
 
     moedas = {
-        "1": 355,
-        "2": 610,
-        "3": 800,
-        "4": 645,
-        "5": 620,
-        "6": 280,
-        "7": 250,
-        "8": 250,
-        "9": 160,
-        "10": 160,
+        "1": 3.55,
+        "2": 6.10,
+        "3": 8.00,
+        "4": 6.45,
+        "5": 6.20,
+        "6": 2.80,
+        "7": 2.50,
+        "8": 2.50,
+        "9": 1.60,
+        "10": 1.60,
     }
 
     #Dicionario para os raios relativos das imagens.
@@ -215,17 +215,23 @@ def main():
     #Exibição de quantos reais há na imagem
     erro = {}
     texto_resultado = ""
+    erro_texto = ""
     for chave, valor in total_centavos_dict.items():
-        erro[chave] = abs(moedas[chave] - valor)
+
         valor_em_real = round((valor / 100), 2)
         num_format = "{:.2f}".format(valor_em_real)
+
+        erro[chave] = "{:.2f}".format(abs(moedas[chave] - float(num_format)))
+
         texto_resultado += f"A imagem {chave} tem R$ {num_format}\n"
+        erro_texto += f"o erro da imagem {chave} é {erro[chave]}\n"
 
     # Exibir janela com o resultado
     janela_resultado = JanelaTexto(texto_resultado)
     janela_resultado.root.mainloop()
 
-
+    janela_resultado = JanelaTexto(erro_texto)
+    janela_resultado.root.mainloop()
 
     print("Erro em centavos por imagem:", erro)
 
