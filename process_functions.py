@@ -98,13 +98,33 @@ def converter_para_dicionario(listas):
 
 
 def encontrar_moeda_mais_proxima(raio_rel, raio_moedas):
+        
+        #Dicionario que recebera o valor em centavos de cada imagem
         total_centavos_dict = {}
+
         for imagem, circulos in raio_rel.items():
+
             total_centavos = 0
+
             for raio in circulos:
+                
+                '''
+                A linha encontra o raio da moeda mais próximo ao raio detectado. 
+                O dicionário raio_moedas tem os valores das moedas como chaves (em centavos) e seus raios como valores. 
+                A função min() usa uma função lambda x: abs(x - raio) para calcular a diferença absoluta entre cada raio de moeda e o raio detectado, 
+                retornando o raio que minimiza essa diferença.
+                '''
                 mais_proximo = min(raio_moedas.values(), key=lambda x: abs(x - raio))
+
+                '''
+                Esta parte do código encontra o valor da moeda (em centavos) que corresponde ao raio mais próximo encontrado na etapa anterior.
+                Vai passar por cada moeda do dicionario de centimetros e se for igual vai para a variável moeda e soma na linha seguinte.
+                '''
                 moeda = [k for k, v in raio_moedas.items() if v == mais_proximo][0]
+
                 total_centavos += moeda
+            
+            #Após achar o valor mais próximo a soma total é associada a outro dicionario em que terá o valor total da imagem.
             total_centavos_dict[imagem] = total_centavos
         return total_centavos_dict
 
@@ -188,8 +208,3 @@ class JanelaTexto:
         # Botão para fechar a janela
         self.botao_fechar = tk.Button(self.root, text="Fechar", command=self.root.destroy)
         self.botao_fechar.pack()
-
-'''
-
-
-'''
