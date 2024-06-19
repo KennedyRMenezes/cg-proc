@@ -2,7 +2,7 @@ import cv2
 import numpy as np
 
 import pathlib
-from process_functions import *
+from process_functions import *  
 
 def main():
 
@@ -20,18 +20,30 @@ def main():
         image_path = image_base_path + image_name
         images_dict[f"{i}"] = image_path  # 1, 2 ..., 3
 
-    # Ajuste de brilho e contraste (TESTE)
-    for name, img_path in images_dict.items():
-        image = cv2.imread(img_path)
-        brilho = 100
-        contraste = 1.5
-        image = contrasteBrilho(image, brilho, contraste)
-
     # Primeira etapa: threshold com o método de OTSU
     # Método de OTSU: um dos mais populares algoritmos de threshold que determina o limiar ótimo
     for name, img_path in images_dict.items():
         image = cv2.imread(img_path)
-        gray_image = rgb_to_gray(image)
+        brilho = 90
+        contraste = 1.40
+        image = contrasteBrilho(image, brilho, contraste)
+        '''cv2.imwrite(
+            "{}/img/edited/ContrasteBrilho_{}.jpeg".format(master_path, name),
+            image,
+        )'''
+        
+        # Aplicar filtro Gaussiano
+        gaussian_blurred = cv2.GaussianBlur(image, (5, 5), 0)
+        
+        '''cv2.imwrite(
+            "{}/img/edited/FiltroGaussiano_{}.jpeg".format(master_path, name),
+            gaussian_blurred,
+        )'''
+        gray_image = rgb_to_gray(gaussian_blurred)
+        '''cv2.imwrite(
+            "{}/img/edited/grayImage_{}.jpeg".format(master_path, name),
+            gray_image,
+        )'''
         binarized_image = OTSU_threshold(gray_image)
         cv2.imwrite(
             "{}/img/edited/t_hold_OTSU_{}.jpeg".format(master_path, name),
@@ -55,23 +67,23 @@ def main():
     for name, img_path in images_dict_edited.items():
         list_images.append(img_path)
 
-        # Ler a imagem em tons de cinza e aplicar algumas correções
+        # TESTE: Ler a imagem em tons de cinza e aplicar algumas correções
         image = cv2.imread(img_path, cv2.IMREAD_GRAYSCALE)
         brilho = 100
-        contraste = 1.2
+        contraste = 1.4
         image = contrasteBrilho(image, brilho, contraste)
 
-        # Aplicar filtro de mediana
-        median_blurred = cv2.medianBlur(image, 7)
-
         # Inverter as cores da imagem
-        negative_image = negative(median_blurred)
+        negative_image = negative(image)
+        '''cv2.imwrite(
+            "{}/img/edited/{}_NEGATIVE.jpeg".format(master_path, name), negative_image
+        )'''
 
         # Preencher buracos na imagem e adicionar a imagem na pasta EDITED
         filled_image = fill_holes(negative_image)
-        cv2.imwrite(
+        '''cv2.imwrite(
             "{}/img/edited/{}_FILLED.jpeg".format(master_path, name), filled_image
-        )
+        )'''
 
         # Remover ruído usando abertura
         kernel = np.ones((3, 3), np.uint8)
@@ -82,9 +94,12 @@ def main():
 
         # Área de primeiro plano seguro
         dist_transform = cv2.distanceTransform(opening, cv2.DIST_L2, 5)
-        # cv2.imwrite("{}/img/edited/{}_DIST.jpeg".format(master_path, name), dist_transform)
-        ret, sure_fg = cv2.threshold(dist_transform, 0.6 * dist_transform.max(), 255, 0)
+        cv2.imwrite("{}/img/edited/{}_DIST.jpeg".format(master_path, name), dist_transform)
+        sure_fg = threshold(dist_transform, 0.6 * dist_transform.max())
 
+        # Como descrito no relatório, lógica utilizada das seguintes fontes:
+        # https://scikit-image.org/docs/stable/auto_examples/segmentation/plot_watershed.html
+        # https://medium.com/turing-talks/transforma%C3%A7%C3%A3o-watershed-com-opencv-68a5bd8196a0
         # Área da região desconhecida
         sure_fg = np.uint8(sure_fg)
         unknown = cv2.subtract(sure_bg, sure_fg)
@@ -101,9 +116,9 @@ def main():
         # Aplicar o algoritmo de watershed
         original_image = cv2.imread(img_path)
         markers = cv2.watershed(original_image, markers)
-        original_image[markers == -1] = [255, 0, 0]
+        original_image[markers == -1] = [255, 0, 0] 
 
-        # Intermediate images
+        # Imagens Intermediárias
         cv2.imwrite("{}/img/edited/{}_opening.jpeg".format(master_path, name), opening)
         cv2.imwrite("{}/img/edited/{}_sure_bg.jpeg".format(master_path, name), sure_bg)
         cv2.imwrite("{}/img/edited/{}_sure_fg.jpeg".format(master_path, name), sure_fg)
@@ -111,14 +126,11 @@ def main():
         cv2.imwrite(
             "{}/img/edited/{}_markers.jpeg".format(master_path, name),
             markers.astype(np.uint8),
-        )
-        cv2.imwrite(
-            "{}/img/edited/{}_final.jpeg".format(master_path, name), original_image
-        )
+        ) 
 
         # Função de seleção de círculo (HOUGH)
         circles = detect_circles(markers.astype(np.uint8))
-        # circles = detect_circles(filled_image) # UTILIZADO PARA TESTES
+        #circles = detect_circles(filled_image) # UTILIZADO PARA TESTES --> SE SAIU PIOR NOS TESTES
 
         list_circles.append(circles)
 
@@ -154,7 +166,7 @@ def main():
         maiores_circulos_de_cada_image[imagem] = maior_circulo
 
     list_path = []
-    for i in range(total_images):
+    for i in range(total_images):   
         i = i + 1
         img_path = "{}/img/{}.jpeg".format(master_path, i)
         list_path.append(img_path)

@@ -38,6 +38,8 @@ def negative(image):
     negative_image = cv2.bitwise_not(image)
     return negative_image
 
+
+# Como descrito no relatório, função utilizou a lógica do seguinte tutorial: https://visp-doc.inria.fr/doxygen/visp-daily/tutorial-imgproc-flood-fill.html
 def fill_holes(image):
     # Imagem para o preenchimento é uma cópia
     filled_image = image.copy()
@@ -72,7 +74,7 @@ def detect_circles(image):
         param1=27,
         param2=26,
         minRadius=17,
-        maxRadius=100
+        maxRadius=60
     )
     return circles
 
@@ -163,6 +165,16 @@ class JanelaImagem:
         proporcao = self.largura_imagem / largura_original
         nova_largura = int(largura_original * proporcao)
         nova_altura = int(altura_original * proporcao)
+        
+        # Limite máximo de altura da imagem
+        monitor = get_monitors()[0]
+        altura_maxima = monitor.height // 2
+        
+        if nova_altura > altura_maxima:
+            proporcao_altura = altura_maxima / altura_original
+            nova_largura = int(largura_original * proporcao_altura)
+            nova_altura = altura_maxima
+        
         return imagem.resize((nova_largura, nova_altura))
 
     def confirmar(self, event=None):  # O argumento event é necessário para a ligação com o evento 'Enter'
@@ -170,21 +182,21 @@ class JanelaImagem:
         self.resposta_usuario = resposta
         self.root.destroy()  # Fechar a janela atual
 
-#Função que recebe uma lista de imagens, uma string, e a largura da image.
-#Para cada imagem recebe o input do usuario, guarda elas e devolve como 'respostas'
+# Função que recebe uma lista de imagens, uma string, e a largura da imagem.
+# Para cada imagem recebe o input do usuário, guarda elas e devolve como 'respostas'
 def interface_usuario(
         lista_de_imagens, 
         texto_input="Qual a moeda de maior tamanho na foto? 100 = 1 Real; 50 = 50 centavos",
         largura_imagem=550
 ):
-    respostas = []  # Dicionário para armazenar as respostas do usuário
+    respostas = []  # Lista para armazenar as respostas do usuário
     for i, imagem_path in enumerate(lista_de_imagens):
         janela_imagem = JanelaImagem(imagem_path, largura_imagem, texto_input)
         janela_imagem.root.wait_window()  # Esperar até que a janela seja fechada
         respostas.append(int(janela_imagem.resposta_usuario))
     return respostas
 
-#Janela em TKinter para apresentar os resultado da soma das imagens
+# Janela em TKinter para apresentar o resultado da soma das imagens
 class JanelaTexto:
     def __init__(self, texto):
         self.root = tk.Toplevel()
@@ -202,9 +214,9 @@ class JanelaTexto:
         self.root.geometry(f"{largura_janela}x{altura_janela}+{pos_x}+{pos_y}")
         
         # Exibindo o texto
-        self.label_texto = tk.Label(self.root, text=texto)
-        self.label_texto.pack()
-        
+        self.label_texto = tk.Label(self.root, text=texto, wraplength=largura_janela-20)
+        self.label_texto.pack(expand=True, fill='both')
+
         # Botão para fechar a janela
         self.botao_fechar = tk.Button(self.root, text="Fechar", command=self.root.destroy)
-        self.botao_fechar.pack()
+        self.botao_fechar.pack(pady=10)
