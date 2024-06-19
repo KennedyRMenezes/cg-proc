@@ -26,6 +26,7 @@ def threshold(image, threshold_value):
     _, binarized_image = cv2.threshold(image, threshold_value, 255, cv2.THRESH_BINARY)
     return binarized_image
 
+# Utilizado como testes, mas não foi utilizado na prática
 def adapt_threshold(image):
     binarized_image = cv2.adaptiveThreshold(image, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 21, 4)
     return binarized_image
