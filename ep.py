@@ -177,7 +177,7 @@ def main():
     # Exibir janela para todas as imagens
     maior_moeda = interface_usuario(list_path)
 
-
+    #Valores reais contido nas imagens
     moedas = {
         "1": 3.55,
         "2": 6.10,
@@ -244,7 +244,5 @@ def main():
 
     janela_resultado = JanelaTexto(erro_texto)
     janela_resultado.root.mainloop()
-
-    print("Erro em centavos por imagem:", erro)
 
 main()
